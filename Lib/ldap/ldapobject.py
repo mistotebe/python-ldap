@@ -30,7 +30,7 @@ from ldap.controls import LDAPControl,DecodeControlTuples,RequestControlTuples
 from ldap.extop import ExtendedRequest,ExtendedResponse
 from ldap.compat import reraise
 
-from ldap import LDAPError
+from ldap import LDAPError, RAISE_ALL
 
 PY2 = sys.version_info[0] <= 2
 if PY2:
@@ -96,14 +96,14 @@ class SimpleLDAPObject:
   def __init__(
     self,uri,
     trace_level=0,trace_file=None,trace_stack_limit=5,bytes_mode=None,
-    bytes_strictness=None,
+    bytes_strictness=None,raise_for_result=RAISE_ALL,
   ):
     self._trace_level = trace_level or ldap._trace_level
     self._trace_file = trace_file or ldap._trace_file
     self._trace_stack_limit = trace_stack_limit
     self._uri = uri
     self._ldap_object_lock = self._ldap_lock('opcall')
-    self._l = ldap.functions._ldap_function_call(ldap._ldap_module_lock,_ldap.initialize,uri)
+    self._l = ldap.functions._ldap_function_call(ldap._ldap_module_lock,_ldap.initialize,uri,raise_for_result)
     self.timeout = -1
     self.protocol_version = ldap.VERSION3
 

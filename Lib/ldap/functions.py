@@ -17,7 +17,7 @@ __all__ = [
 import sys,pprint,time,_ldap,ldap
 from calendar import timegm
 
-from ldap import LDAPError
+from ldap import LDAPError, RAISE_ALL
 
 from ldap.dn import explode_dn,explode_rdn
 
@@ -67,7 +67,7 @@ def _ldap_function_call(lock,func,*args,**kwargs):
 
 def initialize(
     uri, trace_level=0, trace_file=sys.stdout, trace_stack_limit=None,
-    bytes_mode=None, **kwargs
+    bytes_mode=None, raise_for_result=RAISE_ALL, **kwargs
 ):
   """
   Return LDAPObject instance by opening LDAP connection to
@@ -89,7 +89,8 @@ def initialize(
   passed to ``LDAPObject``.
   """
   return LDAPObject(
-      uri, trace_level, trace_file, trace_stack_limit, bytes_mode, **kwargs)
+      uri, trace_level, trace_file, trace_stack_limit, bytes_mode,
+      raise_for_result, **kwargs)
 
 
 def get_option(option):

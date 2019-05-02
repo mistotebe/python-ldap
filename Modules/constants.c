@@ -196,6 +196,13 @@ LDAPinit_constants(PyObject *m)
     if (PyModule_AddIntConstant(m, "OPT_OFF", 0) != 0)
         return -1;
 
+    if (PyModule_AddIntMacro(m, DONT_RAISE) != 0)
+        return -1;
+    if (PyModule_AddIntMacro(m, RAISE_ON_ERROR) != 0)
+        return -1;
+    if (PyModule_AddIntMacro(m, RAISE_ALL) != 0)
+        return -1;
+
     /* exceptions */
 
     LDAPexception_class = PyErr_NewException("ldap.LDAPError", NULL, NULL);

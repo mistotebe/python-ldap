@@ -21,7 +21,7 @@ static void free_attrs(char ***);
 /* constructor */
 
 LDAPObject *
-newLDAPObject(LDAP *l)
+newLDAPObject(LDAP *l, int raise_for_result)
 {
     LDAPObject *self = (LDAPObject *)PyObject_NEW(LDAPObject, &LDAP_Type);
 
@@ -30,6 +30,7 @@ newLDAPObject(LDAP *l)
     self->ldap = l;
     self->_save = NULL;
     self->valid = 1;
+    self->raise_for_result = raise_for_result;
     return self;
 }
 
@@ -1086,6 +1087,7 @@ l_ldap_result4(LDAPObject *self, PyObject *args)
     char *retoid = 0;
     PyObject *valuestr = NULL;
     int result = LDAP_SUCCESS;
+    int should_raise = 0;
     LDAPControl **serverctrls = 0;
 
     if (!PyArg_ParseTuple
@@ -1161,7 +1163,21 @@ l_ldap_result4(LDAPObject *self, PyObject *args)
         LDAP_END_ALLOW_THREADS(self);
     }
 
-    if (result != LDAP_SUCCESS) {       /* result error */
+    switch (result) {
+        case LDAP_SUCCESS:
+            should_raise = 0;
+            break;
+        case LDAP_COMPARE_FALSE:
+        case LDAP_COMPARE_TRUE:
+        case LDAP_REFERRAL:
+        case LDAP_SASL_BIND_IN_PROGRESS:
+            if ( self->raise_for_result <= RAISE_ON_ERROR ) break;
+            /* Fallthrough */
+        default:
+            should_raise = self->raise_for_result > DONT_RAISE;
+            break;
+    }
+    if (should_raise) {
         ldap_controls_free(serverctrls);
         Py_XDECREF(valuestr);
         return LDAPerror(self->ldap, "ldap_parse_result", msg);

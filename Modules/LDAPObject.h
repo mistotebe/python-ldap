@@ -21,13 +21,14 @@ typedef struct {
     PyObject_HEAD LDAP *ldap;
     _threadstate _save;         /* for thread saving on referrals */
     int valid;
+    int raise_for_result;
 } LDAPObject;
 
 extern PyTypeObject LDAP_Type;
 
 #define LDAPObject_Check(v)     (Py_TYPE(v) == &LDAP_Type)
 
-extern LDAPObject *newLDAPObject(LDAP *);
+extern LDAPObject *newLDAPObject(LDAP *, int);
 
 /* macros to allow thread saving in the context of an LDAP connection */
 

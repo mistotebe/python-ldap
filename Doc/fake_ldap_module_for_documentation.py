@@ -28,3 +28,5 @@ def get_option(num):
 
 class LDAPError:
     pass
+
+RAISE_ALL = 2

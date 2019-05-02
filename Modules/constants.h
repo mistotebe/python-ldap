@@ -23,4 +23,8 @@ PyObject *LDAPerr(int errnum);
 #define LDAP_CONTROL_VALUESRETURNFILTER "1.2.826.0.1.3344810.2.3"       /* RFC 3876 */
 #endif /* !LDAP_CONTROL_VALUESRETURNFILTER */
 
+#define DONT_RAISE 0
+#define RAISE_ON_ERROR 1
+#define RAISE_ALL 2
+
 #endif /* __h_constants_ */

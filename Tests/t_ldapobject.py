@@ -655,9 +655,33 @@ class Test00_SimpleLDAPObject(SlapdTestCase):
         result = l.compare_s('cn=Foo1,%s' % base, 'cn', b'Foo1')
         self.assertIs(result, True)
 
+    def test_compare_s_true_onerror(self):
+        base = self.server.suffix
+        l = self._open_ldap_conn(bytes_mode=False, raise_for_result=ldap.RAISE_ON_ERROR)
+        result = l.compare_s('cn=Foo1,%s' % base, 'cn', b'Foo1')
+        self.assertIs(result, True)
+
+    def test_compare_s_true_noraise(self):
+        base = self.server.suffix
+        l = self._open_ldap_conn(bytes_mode=False, raise_for_result=ldap.DONT_RAISE)
+        result = l.compare_s('cn=Foo1,%s' % base, 'cn', b'Foo1')
+        self.assertIs(result, True)
+
     def test_compare_s_false(self):
         base = self.server.suffix
         l = self._ldap_conn
+        result = l.compare_s('cn=Foo1,%s' % base, 'cn', b'Foo2')
+        self.assertIs(result, False)
+
+    def test_compare_s_false_onerror(self):
+        base = self.server.suffix
+        l = self._open_ldap_conn(bytes_mode=False, raise_for_result=ldap.RAISE_ON_ERROR)
+        result = l.compare_s('cn=Foo1,%s' % base, 'cn', b'Foo2')
+        self.assertIs(result, False)
+
+    def test_compare_s_false_noraise(self):
+        base = self.server.suffix
+        l = self._open_ldap_conn(bytes_mode=False, raise_for_result=ldap.DONT_RAISE)
         result = l.compare_s('cn=Foo1,%s' % base, 'cn', b'Foo2')
         self.assertIs(result, False)
 
@@ -666,6 +690,19 @@ class Test00_SimpleLDAPObject(SlapdTestCase):
         l = self._ldap_conn
         with self.assertRaises(ldap.NO_SUCH_OBJECT):
             result = l.compare_s('cn=invalid,%s' % base, 'cn', b'Foo2')
+
+    def test_compare_s_notfound_onerror(self):
+        base = self.server.suffix
+        l = self._open_ldap_conn(bytes_mode=False, raise_for_result=ldap.RAISE_ON_ERROR)
+        with self.assertRaises(ldap.NO_SUCH_OBJECT):
+            result = l.compare_s('cn=invalid,%s' % base, 'cn', b'Foo2')
+
+    def test_compare_s_notfound_noraise(self):
+        base = self.server.suffix
+        l = self._open_ldap_conn(bytes_mode=False, raise_for_result=ldap.DONT_RAISE)
+        result = l.compare_s('cn=invalid,%s' % base, 'cn', b'Foo2')
+        self.assertEqual(result[0], ldap.RES_COMPARE)
+        self.assertEqual(result[1], ldap.NO_SUCH_OBJECT.errnum)
 
     def test_compare_s_invalidattr(self):
         base = self.server.suffix

@@ -399,7 +399,7 @@ class SyncreplConsumer:
 
         """
         while True:
-            type, msg, mid, ctrls, n, v = self.result4(
+            msgtype, result, msg, mid, ctrls, n, v = self.result4(
                 msgid=msgid,
                 timeout=timeout,
                 add_intermediates=1,
@@ -407,7 +407,7 @@ class SyncreplConsumer:
                 all=0,
             )
 
-            if type == 101:
+            if msgtype == 101:
                 # search result. This marks the end of a refreshOnly session.
                 # look for a SyncDone control, save the cookie, and if necessary
                 # delete non-present entries.
@@ -420,7 +420,7 @@ class SyncreplConsumer:
 
                 return False
 
-            elif type == 100:
+            elif msgtype == 100:
                 # search entry with associated SyncState control
                 for m in msg:
                     dn, attrs, ctrls = m
@@ -439,7 +439,7 @@ class SyncreplConsumer:
                             self.syncrepl_set_cookie(c.cookie)
                         break
 
-            elif type == 121:
+            elif msgtype == 121:
                 # Intermediate message. If it is a SyncInfoMessage, parse it
                 for m in msg:
                     rname, resp, ctrls = m

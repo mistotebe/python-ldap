@@ -30,7 +30,7 @@ from ldap.controls import LDAPControl,DecodeControlTuples,RequestControlTuples
 from ldap.extop import ExtendedRequest,ExtendedResponse
 from ldap.compat import reraise
 
-from ldap import LDAPError
+from ldap import LDAPError, RAISE_ALL
 
 PY2 = sys.version_info[0] <= 2
 if PY2:
@@ -96,14 +96,14 @@ class SimpleLDAPObject:
   def __init__(
     self,uri,
     trace_level=0,trace_file=None,trace_stack_limit=5,bytes_mode=None,
-    bytes_strictness=None,
+    bytes_strictness=None,raise_for_result=RAISE_ALL,
   ):
     self._trace_level = trace_level or ldap._trace_level
     self._trace_file = trace_file or ldap._trace_file
     self._trace_stack_limit = trace_stack_limit
     self._uri = uri
     self._ldap_object_lock = self._ldap_lock('opcall')
-    self._l = ldap.functions._ldap_function_call(ldap._ldap_module_lock,_ldap.initialize,uri)
+    self._l = ldap.functions._ldap_function_call(ldap._ldap_module_lock,_ldap.initialize,uri,raise_for_result)
     self.timeout = -1
     self.protocol_version = ldap.VERSION3
 
@@ -520,14 +520,16 @@ class SimpleLDAPObject:
   def compare_ext_s(self,dn,attr,value,serverctrls=None,clientctrls=None):
     msgid = self.compare_ext(dn,attr,value,serverctrls,clientctrls)
     try:
-        ldap_res = self.result3(msgid,all=1,timeout=self.timeout)
+        ldap_res = self.result4(msgid,all=1,timeout=self.timeout)
+        if ldap_res[1] == ldap.COMPARE_TRUE.errnum:
+            return True
+        if ldap_res[1] == ldap.COMPARE_FALSE.errnum:
+            return False
+        return ldap_res
     except ldap.COMPARE_TRUE:
       return True
     except ldap.COMPARE_FALSE:
       return False
-    raise ldap.PROTOCOL_ERROR(
-        'Compare operation returned wrong result: %r' % (ldap_res,)
-    )
 
   def compare(self,dn,attr,value):
     return self.compare_ext(dn,attr,value,None,None)
@@ -576,7 +578,7 @@ class SimpleLDAPObject:
     return self._ldap_call(self._l.extop,extreq.requestName,extreq.encodedRequestValue(),RequestControlTuples(serverctrls),RequestControlTuples(clientctrls))
 
   def extop_result(self,msgid=ldap.RES_ANY,all=1,timeout=None):
-    resulttype,msg,msgid,respctrls,respoid,respvalue = self.result4(msgid,all=1,timeout=self.timeout,add_ctrls=1,add_intermediates=1,add_extop=1)
+    msgtype,result,msg,msgid,respctrls,respoid,respvalue = self.result4(msgid,all=1,timeout=self.timeout,add_ctrls=1,add_intermediates=1,add_extop=1)
     return (respoid,respvalue)
 
   def extop_s(self,extreq,serverctrls=None,clientctrls=None,extop_resp_class=None):
@@ -737,39 +739,39 @@ class SimpleLDAPObject:
         If a timeout occurs, a TIMEOUT exception is raised, unless
         polling (timeout = 0), in which case (None, None) is returned.
     """
-    resp_type, resp_data, resp_msgid = self.result2(msgid,all,timeout)
-    return resp_type, resp_data
+    msgtype, resp_data, resp_msgid = self.result2(msgid,all,timeout)
+    return msgtype, resp_data
 
   def result2(self,msgid=ldap.RES_ANY,all=1,timeout=None):
-    resp_type, resp_data, resp_msgid, resp_ctrls = self.result3(msgid,all,timeout)
-    return resp_type, resp_data, resp_msgid
+    msgtype, resp_data, resp_msgid, resp_ctrls = self.result3(msgid,all,timeout)
+    return msgtype, resp_data, resp_msgid
 
   def result3(self,msgid=ldap.RES_ANY,all=1,timeout=None,resp_ctrl_classes=None):
-    resp_type, resp_data, resp_msgid, decoded_resp_ctrls, retoid, retval = self.result4(
+    msgtype, result, resp_data, resp_msgid, decoded_resp_ctrls, retoid, retval = self.result4(
       msgid,all,timeout,
       add_ctrls=0,add_intermediates=0,add_extop=0,
       resp_ctrl_classes=resp_ctrl_classes
     )
-    return resp_type, resp_data, resp_msgid, decoded_resp_ctrls
+    return msgtype, resp_data, resp_msgid, decoded_resp_ctrls
 
   def result4(self,msgid=ldap.RES_ANY,all=1,timeout=None,add_ctrls=0,add_intermediates=0,add_extop=0,resp_ctrl_classes=None):
     if timeout is None:
       timeout = self.timeout
     ldap_result = self._ldap_call(self._l.result4,msgid,all,timeout,add_ctrls,add_intermediates,add_extop)
     if ldap_result is None:
-        resp_type, resp_data, resp_msgid, resp_ctrls, resp_name, resp_value = (None,None,None,None,None,None)
+        resp_type, result, resp_data, resp_msgid, resp_ctrls, resp_name, resp_value = (None,None,None,None,None,None,None)
     else:
-      if len(ldap_result)==4:
-        resp_type, resp_data, resp_msgid, resp_ctrls = ldap_result
+      if len(ldap_result)==5:
+        resp_type, result, resp_data, resp_msgid, resp_ctrls = ldap_result
         resp_name, resp_value = None,None
       else:
-        resp_type, resp_data, resp_msgid, resp_ctrls, resp_name, resp_value = ldap_result
+        resp_type, result, resp_data, resp_msgid, resp_ctrls, resp_name, resp_value = ldap_result
       if add_ctrls:
         resp_data = [ (t,r,DecodeControlTuples(c,resp_ctrl_classes)) for t,r,c in resp_data ]
     decoded_resp_ctrls = DecodeControlTuples(resp_ctrls,resp_ctrl_classes)
     if resp_data is not None:
         resp_data = self._bytesify_results(resp_data, with_ctrls=add_ctrls)
-    return resp_type, resp_data, resp_msgid, decoded_resp_ctrls, resp_name, resp_value
+    return resp_type, result, resp_data, resp_msgid, decoded_resp_ctrls, resp_name, resp_value
 
   def search_ext(self,base,scope,filterstr=None,attrlist=None,attrsonly=0,serverctrls=None,clientctrls=None,timeout=-1,sizelimit=0):
     """
@@ -1086,7 +1088,7 @@ class ReconnectLDAPObject(SimpleLDAPObject):
   def __init__(
     self,uri,
     trace_level=0,trace_file=None,trace_stack_limit=5,bytes_mode=None,
-    bytes_strictness=None, retry_max=1, retry_delay=60.0
+    bytes_strictness=None, raise_for_result=RAISE_ALL, retry_max=1, retry_delay=60.0
   ):
     """
     Parameters like SimpleLDAPObject.__init__() with these
@@ -1102,7 +1104,8 @@ class ReconnectLDAPObject(SimpleLDAPObject):
     self._last_bind = None
     SimpleLDAPObject.__init__(self, uri, trace_level, trace_file,
                               trace_stack_limit, bytes_mode,
-                              bytes_strictness=bytes_strictness)
+                              bytes_strictness=bytes_strictness,
+                              raise_for_result=raise_for_result)
     self._reconnect_lock = ldap.LDAPLock(desc='reconnect lock within %s' % (repr(self)))
     self._retry_max = retry_max
     self._retry_delay = retry_delay

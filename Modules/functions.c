@@ -13,11 +13,12 @@ static PyObject *
 l_ldap_initialize(PyObject *unused, PyObject *args)
 {
     char *uri;
+    int raise_for_result = RAISE_ALL;
     LDAP *ld = NULL;
     int ret;
     PyThreadState *save;
 
-    if (!PyArg_ParseTuple(args, "s:initialize", &uri))
+    if (!PyArg_ParseTuple(args, "s|i:initialize", &uri, &raise_for_result))
         return NULL;
 
     save = PyEval_SaveThread();
@@ -27,7 +28,7 @@ l_ldap_initialize(PyObject *unused, PyObject *args)
     if (ret != LDAP_SUCCESS)
         return LDAPerror(ld);
 
-    return (PyObject *)newLDAPObject(ld);
+    return (PyObject *)newLDAPObject(ld, raise_for_result);
 }
 
 /* ldap_str2dn */

@@ -935,10 +935,10 @@ and wait for and return with the server's result, or with
    This method behaves almost exactly like :py:meth:`result2()`. But it
    returns an extra item in the tuple, the decoded server controls.
 
-.. py:method:: LDAPObject.result4([msgid=RES_ANY [, all=1 [, timeout=None [, add_ctrls=0 [, add_intermediates=0 [, add_extop=0 [, resp_ctrl_classes=None]]]]]]]) -> 6-tuple
+.. py:method:: LDAPObject.result4([msgid=RES_ANY [, all=1 [, timeout=None [, add_ctrls=0 [, add_intermediates=0 [, add_extop=0 [, resp_ctrl_classes=None]]]]]]]) -> 7-tuple
 
    This method behaves almost exactly like :py:meth:`result3()`. But it
-   returns an extra items in the tuple, the decoded results of an extended response.
+   returns extra items in the tuple, the result code and decoded results of an extended response.
 
    The additional arguments are:
 

@@ -385,24 +385,30 @@ class TestLdapCExtension(SlapdTestCase):
         m = l.compare_ext(dn, "userPassword", "bad_string")
         try:
             r = l.result4(m, _ldap.MSG_ALL, self.timeout)
-        except _ldap.COMPARE_FALSE:
-            pass
+        except _ldap.COMPARE_FALSE as e:
+            self.assertEqual(e.args[0]['msgid'], m)
+            self.assertEqual(e.args[0]['msgtype'], _ldap.RES_COMPARE)
+            self.assertEqual(e.args[0]['result'], 5)
         else:
             self.fail("expected COMPARE_FALSE, got %r" % r)
         # try a true compare
         m = l.compare_ext(dn, "userPassword", "the_password")
         try:
             r = l.result4(m, _ldap.MSG_ALL, self.timeout)
-        except _ldap.COMPARE_TRUE:
-            pass
+        except _ldap.COMPARE_TRUE as e:
+            self.assertEqual(e.args[0]['msgid'], m)
+            self.assertEqual(e.args[0]['msgtype'], _ldap.RES_COMPARE)
+            self.assertEqual(e.args[0]['result'], 6)
         else:
             self.fail("expected COMPARE_TRUE, got %r" % r)
         # try a compare on bad attribute
         m = l.compare_ext(dn, "badAttribute", "ignoreme")
         try:
             r = l.result4(m, _ldap.MSG_ALL, self.timeout)
-        except _ldap.error:
-            pass
+        except _ldap.error as e:
+            self.assertEqual(e.args[0]['msgid'], m)
+            self.assertEqual(e.args[0]['msgtype'], _ldap.RES_COMPARE)
+            self.assertEqual(e.args[0]['result'], 17)
         else:
             self.fail("expected LDAPError, got %r" % r)
 

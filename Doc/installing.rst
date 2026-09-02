@@ -160,7 +160,7 @@ Debian
 Packages for building::
 
    # apt-get install build-essential ldap-utils \
-       libldap2-dev libsasl2-dev
+       libldap2-dev libsasl2-dev python3-dev
 
 Packages for building and testing::
 
@@ -170,7 +170,8 @@ Packages for building and testing::
 
 .. note::
 
-   On older releases ``tox`` was called ``python-tox``.
+   If not building for the default Python interpreter, you might have to install
+   ``python<x.y>-dev`` instead, where ``x.y`` is your target python version.
 
 Fedora
 ------
